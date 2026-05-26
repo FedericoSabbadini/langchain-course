@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from langchain_core.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 from langchain_ollama import ChatOllama
 
 load_dotenv()  # Load environment variables from .env file
@@ -8,6 +8,7 @@ import os
 
 key = os.getenv("ANTHROPIC_API_KEY")
 model = os.getenv("ANTHROPIC_MODEL")
+os.environ["GROQ_API_KEY"] = "abc" # type: ignore
 ollama_model = os.getenv("OLLAMA_MODEL")
 
 if __name__ == "__main__":
@@ -19,10 +20,16 @@ if __name__ == "__main__":
     prompt = PromptTemplate(
         input_variables=["information"],
         template="Write me a short summary of the following information: {information}",
-    )
+    ) 
+    prompt = ChatPromptTemplate.from_messages(
+         [ ("system", "You are a helpful assistant that summarizes information."),
+           ("human", "Write me a short summary of the following information: {information}") ]
+     )
 
     # llm = ChatAnthropic(model=model, anthropic_api_key=key) # type: ignore
     llm = ChatOllama(temperature=0.9, model=ollama_model)  # type: ignore
+    # llm.invoke(messages=[{"role": "user", "content": information}]).content
+
 
     chain = prompt | llm
     response = chain.invoke(input={"information": information})
