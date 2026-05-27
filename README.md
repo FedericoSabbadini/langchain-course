@@ -1,150 +1,114 @@
-# LangChain- Develop AI Agents with LangChain & LangGraph 🦜🔗
+# ReAct Search Agent - Step by Step Tutorial
 
-**Learn LangChain and LangGraph by building real world AI Agents (Python, Latest Version V.1.0+)**
+This branch demonstrates how to **gradually build a ReAct (Reasoning + Acting) agent** using LangChain. Each commit introduces a new concept, showing you the evolution from a basic agent to a modern, production-ready implementation.
 
-This course is designed to teach you how to QUICKLY harness the power of the LangChain library for LLM applications. Build 3 end-to-end working LangChain based generative AI applications with no fluff, no toy examples - just real projects using real APIs and real-world skills.
+## What is ReAct?
 
-![LangChain Logo](/static/LangChain_OSS%20Lockup_light.png)
-![LangGraph Logo](/static/LangGraph_OSS%20Lockup_light.png)
+ReAct is an agent architecture that combines **reasoning** (thinking about what to do) with **acting** (executing tools). The agent follows a loop:
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/EdenMarco177?style=social)](https://twitter.com/EdenMarco177)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+```
+Question → Thought → Action → Observation → ... → Final Answer
+```
 
-[![udemy](https://img.shields.io/badge/LangChain%20Udemy%20Course%20Coupon%20%2412.99-brightgreen)](https://www.udemy.com/course/langchain/?couponCode=APRIL-2026)
+## Commit Progression
 
+Follow the commits in order to learn how to build a ReAct agent step by step:
 
+| # | Commit | Description | Key Concepts |
+|---|--------|-------------|--------------|
+| 1 | `151040b` - **react search agent** | Basic ReAct agent setup using LangChain Classic with Tavily search tool | - Project initialization with `uv`<br>- `create_react_agent` from langchain-classic<br>- Using `hub.pull()` for the standard ReAct prompt<br>- `AgentExecutor` for running the agent loop<br>- Tavily search as the tool |
+| 2 | `b7d3f9c` - **added output parsing** | Add structured output parsing with Pydantic models | - Custom Pydantic schemas (`AgentResponse`, `Source`)<br>- `PydanticOutputParser` for parsing agent output<br>- Custom ReAct prompt with format instructions<br>- Chaining with `RunnableLambda` to extract and parse output |
+| 3 | `cc7b496` - **refactor output parsing to use structured output** | Replace manual parsing with `with_structured_output` | - `llm.with_structured_output()` method<br>- Cleaner approach to structured responses<br>- Simplified chain without manual parser |
+| 4 | `6e20937` - **migrate to langchain v0.1 create_agent API** | Modernize to LangChain v0.1 with new `create_agent` API | - New `create_agent` from `langchain.agents`<br>- Built-in `response_format` parameter<br>- Message-based invocation<br>- Simplified code (~50% reduction) |
 
-## 💡 What You'll Build 
+## How to Use This Tutorial
 
-This course takes you through building 7 real-world AI agent projects, from simple hello-world applications to advanced agentic systems:
+### Option 1: Checkout Each Commit
+```bash
+# Start from the first commit
+git checkout 151040b
 
-| Project | Type | Description |
-|---------|------|-------------|
-| 👋 [LangChain Hello World](https://github.com/emarco177/langchain-course/tree/project/hello-world) | Branch (`project/hello-world`) | Your first AI agent - basic structure and LLM integration |
-| 🔎  [Modern Search Agent](https://github.com/emarco177/ice_breaker/tree/project/search-agent) | Branch (`project/search-agent`) | Build search agents using LangChain v.1's `create_agent` interface with custom tools, Tavily integration, and structured outputs |
-| 🧠 [Agents Under The Hood](https://github.com/emarco177/langchain-course/tree/project/agents-under-the-hood) | Branch (`project/agents-under-the-hood`) | Understanding reasoning and acting patterns in AI agents |
-| 📄 [RAG Gist](https://github.com/emarco177/langchain-course/tree/project/rag-gist) | Branch (`project/rag-gist`) | The gist of retrieval-augmented generation |
-| 📚 [Documentation Helper](https://github.com/emarco177/documentation-helper) | External Repo | Intelligent documentation assistant |
-| 💻 [Code Interpreter](https://github.com/emarco177/langchain-course/tree/project/code-interpreter) | Branch (`project/code-interpreter`) | AI-powered code execution and analysis |
-| 🪞 [Reflection Agent](https://github.com/emarco177/langgraph-course/tree/project/reflection-agent) | External Repo | Self-improving agent with reflection and critique capabilities |
-| 🔄 [Reflexion Agent](https://github.com/emarco177/langgraph-course/tree/project/reflexion-agent) | External Repo | Advanced self-correcting agent using reflexion techniques |
-| 🤖 [Agentic RAG](https://github.com/emarco177/langgraph-course/tree/project/agentic-rag) | External Repo | Advanced retrieval-augmented generation system |
+# Move to the next commit
+git checkout b7d3f9c
 
-## 📚 Course Highlights 
+# Continue through each commit...
+```
 
-- **7 Complete Projects** - From beginner to advanced implementations including Ice Breaker, Documentation Helper, and Code Interpreter
-- **Real-World Applications** - Build agents that solve actual problems with live APIs
-- **Modern Tech Stack** - LangChain v0.3+, LangGraph, Pinecone, FAISS, Streamlit
-- **Practical Skills** - Learn RAG, vector databases, prompt engineering, and agent workflows
-- **Interactive Learning** - Follow commits chronologically for step-by-step learning
+### Option 2: View Diffs Between Commits
+```bash
+# See what changed between commits
+git diff 151040b b7d3f9c  # Basic → Output Parsing
+git diff b7d3f9c cc7b496  # Output Parsing → Structured Output
+git diff cc7b496 6e20937  # Structured Output → Modern API
+```
 
-## 🤔 Learning Path 
+## Architecture Overview
 
-### Phase 1: Foundations
-1. **Hello World Chain** - Basic agent structure and LLM integration
-2. **Code Interpreter** - Tool calling and code execution capabilities
+```mermaid
+flowchart LR
+    A[User Query] --> B[LLM]
+    B --> C{Thought}
+    C --> D[Action]
+    D --> E[Tool: Tavily Search]
+    E --> F[Observation]
+    F --> G{Done?}
+    G -->|No| C
+    G -->|Yes| H[Final Answer]
+    H --> I[Structured Response]
 
-### Phase 2: Real-World Applications
-3. **Ice Breaker** - Data collection and social media integration
-4. **Documentation Helper** - RAG implementation and knowledge management
+    subgraph ReAct Loop
+        C --> D --> E --> F --> G
+    end
 
-### Phase 3: Advanced Concepts
-5. **Blog Analyzer** - Multi-step reasoning and content analysis
-6. **Agentic RAG** - Self-correcting agents with memory and planning
+    style A fill:#e1f5fe
+    style I fill:#c8e6c9
+    style ReAct Loop fill:#fff3e0
+```
 
-## ▶️ Getting Started 
+### ReAct Loop Explained
 
-### 🛠️ Prerequisites 
-- **This is not a beginner course** - Basic software engineering concepts needed
-- Familiarity with: git, Python, environment variables, classes, testing and debugging
-- Python 3.10+
-- Any Python package manager (uv, poetry, pipenv) - but NOT conda!
-- Access to an LLM (can be open source via Ollama, or cloud providers like OpenAI, Anthropic, Gemini)
-- No Machine Learning experience needed
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as Agent LLM
+    participant T as Tool Tavily
 
-### ⚙️ Setup Instructions 
+    U->>A: Question: Find AI engineer jobs
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/emarco177/langchain-course
-   cd langchain-course
-   ```
-2. **Choose your learning path**
-   
-   **For branch-based projects:**
-   ```bash
-   # Start with Hello World
-   git checkout project/hello-world
-   uv sync
-   uv run python main.py
-   
-   # Progress to Code Interpreter
-   git checkout project/code-interpreter
-   uv sync
-   uv run python main.py
-   ```
-   
-   **For external repository projects:**
-   ```bash
-   # Clone specific project repositories
-   git clone https://github.com/emarco177/ice_breaker
-   cd ice_breaker
-   # Follow project-specific setup instructions
-   ```
+    loop ReAct Loop
+        A->>A: Thought: I need to search for jobs
+        A->>T: Action: search AI engineer langchain bay area
+        T-->>A: Observation: Found 3 job postings...
+        A->>A: Thought: I have enough information
+    end
 
-3. **Follow the commits**
-   - Each commit represents a lesson or feature implementation
-   - Use `git log --oneline` to see the learning progression
-   - Checkout previous commits to understand the development process
+    A->>U: Final Answer: Here are 3 jobs...
+```
 
-**External Projects:**
-- [Ice Breaker](https://github.com/emarco177/ice_breaker) - Social media profile analyzer
-- [Medium Analyzer](https://github.com/emarco177/blog-analyzer) - Content analysis and insights generator
-- [Documentation Helper](https://github.com/emarco177/documentation-helper) - AI documentation assistant
-- [Reflection Agent](https://github.com/emarco177/langgraph-course/tree/project/reflection-agent) - Self-improving agent with reflection and critique capabilities
-- [Reflexion Agent](https://github.com/emarco177/langgraph-course/tree/project/reflexion-agent) - Advanced self-correcting agent using reflexion techniques
-- [Agentic RAG](https://github.com/emarco177/langgraph-course/tree/project/agentic-rag) - Advanced retrieval-augmented generation system
+## Getting Started
 
+```bash
+# Install dependencies
+uv sync
 
-## 📚 Learning Objectives 
+# Set up environment variables
+cp .env.example .env
+# Add your OPENAI_API_KEY and TAVILY_API_KEY
 
-By the end of this course, you'll be able to:
+# Run the agent
+uv run python main.py
+```
 
-- Build AI agents from scratch using modern frameworks
-- Implement tool calling and external API integrations
-- Create RAG systems with vector databases
-- Design multi-step reasoning workflows
-- Deploy agents to production environments
-- Handle error correction and self-improvement in agents
-- Optimize agent performance and cost efficiency
+## Key Files
 
+| File | Purpose |
+|------|---------|
+| `main.py` | Main agent implementation |
+| `schemas.py` | Pydantic models for structured output |
+| `prompt.py` | Custom ReAct prompt template (commits 2-3) |
 
+## Requirements
 
-
-
-## 🙏 Acknowledgements 
-
-Big thanks to the **LangChain / LangGraph** team and their excellent [documentation and tutorials](https://langchain-ai.github.io/langgraph/tutorials/introduction/) that make this course possible.
-
-## 🌟 Support
-
-If you find this project helpful, please consider:
-- ⭐ Starring the repository
-- 🐛 Reporting issues
-- 💡 Contributing improvements
-- 📢 Sharing with others
-
----
-
-<div align="center">
-
-### 🔗 Connect with Me
-
-[![Portfolio](https://img.shields.io/badge/Portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://www.udemy.com/course/langchain/?referralCode=D981B8213164A3EA91AC)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/eden-marco/)
-[![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/EdenEmarco177)
-
-**Built with ❤️ by Eden Marco**
-
-</div>
-
+- Python 3.12+
+- OpenAI API key
+- Tavily API key
