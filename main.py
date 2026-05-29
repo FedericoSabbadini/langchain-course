@@ -1,88 +1,67 @@
-from dotenv import load_dotenv
-from langchain_ollama import OllamaEmbeddings # embedding
-from langchain_anthropic import ChatAnthropic # llm
-from langchain.chat_models import init_chat_model
-from langchain_pinecone import PineconeVectorStore # vector store
-from langchain_core.prompts import PromptTemplate # prompt template
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage
-from langchain_core.output_parsers import StrOutputParser   
-from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-# RunnablePassthrough: A runnable that simply passes its input through 
-# without modification. It can be used to chain together other
-# runnables while preserving the original input.
-from operator import itemgetter
-import os
+from typing import Any, Dict, List
 
-load_dotenv()
-INDEX_NAME = os.getenv("PINECONE_INDEX")
-KEY_PINECONE = os.getenv("PINECONE_API_KEY")
-EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL")
+import streamlit as st
 
-embedder= OllamaEmbeddings(model=EMBEDDING_MODEL)
-# llm = ChatAnthropic(model=os.getenv("ANTHROPIC_MODEL"), temperature=0.9, anthropic_api_key="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")
-llm = init_chat_model(model="ollama: " + OLLAMA_MODEL)
-vector_store = PineconeVectorStore(
-    index_name=INDEX_NAME,
-    embedding=embedder
-)
-retriever = vector_store.as_retriever(search_kwargs={"k": 3})
+from backend.core import run_llm
 
 
-prompt_template = ChatPromptTemplate.from_template(
-    """Answer the question based only on the following context, 
-    if the question cannot be answered based on the context, say  "I don't know". 
-    Do not use any information that is not in the context.:
-
-{context}
-
-Question: {question}
-
-Provide a detailed answer:"""
-)
-def format_docs_as_retrieved_info(docs):
-    retrieved_info = ""
-    for i, doc in enumerate(docs):
-        retrieved_info += f"Document {i+1}:\n{doc.page_content}\n\n"
-    return retrieved_info
-    
+def _format_sources(context_docs: List[Any]) -> List[str]:
+    return [
+        str((meta.get("source") or "Unknown"))
+        for doc in (context_docs or [])
+        if (meta := (getattr(doc, "metadata", None) or {})) is not None
+    ]
 
 
-query = "Tell me about Pinecone in machine learning."
-print(f"Query: {query}")
+st.set_page_config(page_title="LangChain Documentation Helper", layout="centered")
+st.title("LangChain Documentation Helper")
 
-# print('----Answering without retrieved information:----')
-# prompt = prompt_template.format_messages(
-#     context="",
-#     question=query
-# )
-# response = llm.invoke(prompt)
-# print(response.content)
+with st.sidebar:
+    st.subheader("Session")
+    if st.button("Clear chat", use_container_width=True):
+        st.session_state.pop("messages", None)
+        st.rerun()
 
-# print('\n----Answering with retrieved information:----')
-# retrieved_docs = retriever.invoke(query)
-# print(f"Retrieved {len(retrieved_docs)} documents.")
-# retrieved_info = format_docs_as_retrieved_info(retrieved_docs)
-# prompt = prompt_template.format_messages(
-#     context=retrieved_info,
-#     question=query
-# )
-# response = llm.invoke(prompt)
-# print(response.content)
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {
+            "role": "assistant",
+            "content": "Ask me anything about LangChain docs. I’ll retrieve relevant context and cite sources.",
+            "sources": [],
+        }
+    ]
 
-print('\n----Answering with retrieved information with chain:----')
-question = {"question": query}
-chain = (
-    RunnablePassthrough.assign( # .assign allows us to create a new runnable that takes the output of the previous runnable and assigns it to a new variable. 
-        # In this case, we are taking the "question" from the input and assigning it to a new variable called "context" that will be used in the next step of the chain.
-        context=itemgetter("question")
-        | retriever # with RunnablePassthrough, the only input to tetriever is a string, not a dictionary
-        | format_docs_as_retrieved_info # the method output is put in the "context" variable, which is used in the next step of the chain
-    ) # question -> (question, context)
-    | prompt_template # (question, context) -> prompt
-    | llm # prompt -> response
-    | StrOutputParser() # response -> output
-)
-response = chain.invoke(question)
-print(response)
+for msg in st.session_state.messages:
+    with st.chat_message(msg["role"]):
+        st.markdown(msg["content"])
+        if msg.get("sources"):
+            with st.expander("Sources"):
+                for s in msg["sources"]:
+                    st.markdown(f"- {s}")
+
+prompt = st.chat_input("Ask a question about LangChain…")
+if prompt:
+    st.session_state.messages.append({"role": "user", "content": prompt, "sources": []})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    with st.chat_message("assistant"):
+        try:
+            with st.spinner("Retrieving docs and generating answer…"):
+                result: Dict[str, Any] = run_llm(prompt)
+                answer = str(result.get("answer", "")).strip() or "(No answer returned.)"
+                sources = _format_sources(result.get("context", []))
+
+            st.markdown(answer)
+            if sources:
+                with st.expander("Sources"):
+                    for s in sources:
+                        st.markdown(f"- {s}")
+
+            st.session_state.messages.append(
+                {"role": "assistant", "content": answer, "sources": sources}
+            )
+        except Exception as e:
+            st.error("Failed to generate a response.")
+            st.exception(e)
+

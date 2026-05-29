@@ -1,176 +1,195 @@
-# Agents Under the Hood
 
-**Peeling back the layers of a LangChain agent — from high-level abstractions down to raw prompt engineering.**
+# 🦜 LangChain Documentation Helper
 
-In this section we build the **same shopping assistant agent** three different ways. Each time we remove a layer of abstraction, so you can see exactly what's happening underneath.
+<div align="center">
 
-## The Big Idea
+**An intelligent documentation assistant powered by LangChain and vector search**
 
-Every AI agent — whether built with LangChain, LlamaIndex, CrewAI, or from scratch — follows the same core loop. We build it three times, each time peeling off a layer:
+<p align="center">
+  <img src="static/Trimmed Padded Langchain.png" alt="LangChain Logo" width="180" style="margin: 0 10px;">
+  <img src="static/Tavily Logo Trimmed Padded.png" alt="Tavily Logo" width="180" style="margin: 0 10px;">
+</p>
 
-1. **Start with LangChain** — this is how you'd normally build an agent. `@tool`, `bind_tools()`, `init_chat_model()`. It just works. But what's actually happening underneath?
-2. **Peel off LangChain** — build the same agent from scratch using only the Ollama SDK. Now you see what LangChain was doing for you: hand-written JSON schemas, manual message routing, raw tool dispatch.
-3. **Peel off function calling** — go even deeper. Modern LLMs have built-in function calling, but that's a recent feature (June 2023). Before that, agents worked through pure prompt engineering: the **ReAct pattern**. We strip away function calling entirely and build it with just a prompt template and regex.
+<br>
 
-```
-┌─────────────────────────────────────────────┐
-│  File 1: LangChain                          │  ← @tool, bind_tools(), ToolMessage
-│  ┌────────────────────────────────────────┐  │
-│  │  File 2: Raw Function Calling          │  │  ← Hand-written JSON schemas, ollama.chat()
-│  │  ┌─────────────────────────────────┐   │  │
-│  │  │  File 3: Raw ReAct Prompt       │   │  │  ← Prompt template, regex, scratchpad
-│  │  └─────────────────────────────────┘   │  │
-│  └────────────────────────────────────────┘  │
-└─────────────────────────────────────────────┘
-```
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![LangChain](https://img.shields.io/badge/LangChain-🦜🔗-green.svg)](https://langchain.com/)
+[![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B.svg)](https://streamlit.io/)
+[![Pinecone](https://img.shields.io/badge/Pinecone-🌲-orange.svg)](https://pinecone.io/)
+[![Tavily](https://img.shields.io/badge/Tavily-🔍-purple.svg)](https://app.tavily.com/home?utm_campaign=eden_marco&utm_medium=socials&utm_source=linkedin)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Each file is self-contained and runnable on its own.
+[![udemy](https://img.shields.io/badge/LangChain%20Udemy%20Course-%2412.99-green)](https://www.udemy.com/course/langchain/?couponCode=APRIL-2026)
 
----
+</div>
 
-## The Agent Loop
+## 🎯 Overview
 
-At their core, all three implementations share the same loop — the agent reasons, picks a tool, executes it, observes the result, and repeats until it has a final answer:
+The **LangChain Documentation Helper** is a sophisticated AI-powered web application that serves as a slim version of [chat.langchain.com](https://chat.langchain.com/). This intelligent documentation assistant provides accurate answers to questions about LangChain documentation using advanced Retrieval-Augmented Generation (RAG) techniques, enhanced with web crawling capabilities and conversational memory.
 
-```mermaid
-graph TB
-    Input([User Question]) --> Loop
+### ✨ Key Features
 
-    subgraph Loop["Agent Loop"]
-        direction TB
-        LLM{{"🧠 LLM<br/>(Reason)"}}
-        LLM -->|"Tool Call"| Execute["⚡ Execute Tool"]
-        Execute --> Observation["📋 Observation<br/>(Tool Result)"]
-        Observation --> LLM
-    end
+**RAG Pipeline Flow:**
 
-    LLM -->|"Final Answer"| Output([Answer to User])
+1. 🌐 **Web Crawling**: Real-time web scraping and content extraction using Tavily's advanced crawling capabilities
+2. 📚 **Document Processing**: Intelligent chunking and preprocessing of LangChain documentation
+3. 🔍 **Vector Storage**: Advanced embedding and indexing using Pinecone for fast similarity search
+4. 🎯 **Intelligent Retrieval**: Context-aware document retrieval based on user queries
+5. 🧩 **Memory System**: Conversational memory for coreference resolution and context continuity
+6. 🧠 **Context-Aware Generation**: Provides accurate, contextual answers with source citations
+7. 💬 **Interactive Interface**: User-friendly chat interface powered by Streamlit
+8. 🚀 **Real-time Processing**: Fast end-to-end pipeline from query to response
 
-    style Input fill:#1e3a5f,stroke:#1e3a5f,color:#fff
-    style Output fill:#1e3a5f,stroke:#1e3a5f,color:#fff
-    style LLM fill:#e8eaf6,stroke:#5c6bc0,stroke-width:2px
-    style Execute fill:#f3e5f5,stroke:#8e24aa,stroke-width:2px
-    style Observation fill:#e0e0e0,stroke:#616161,stroke-width:2px
-    style Loop fill:#fafafa,stroke:#bdbdbd,stroke-width:1px,stroke-dasharray: 5 5
-```
+## 🎬 Demo
 
-What changes across the three files is **how** each step is implemented:
+<div align="center">
+  <img src="static/banner.gif" alt="Documentation Helper Demo" width="700">
+  <p><em>Interactive demo showing the LangChain Documentation Helper in action</em></p>
+</div>
 
-| Step | File 1 (LangChain) | File 2 (Raw Function Calling) | File 3 (Raw ReAct) |
-|------|------|------|------|
-| **Reason** | LLM returns structured `tool_calls` | LLM returns structured `tool_calls` | LLM outputs text: `Thought: ... Action: ...` |
-| **Parse** | `ai_message.tool_calls[0]` | `message.tool_calls[0].function` | Regex: `r"Action:\s*(.+)"` |
-| **Execute** | `tool.invoke(args)` | `tools[name](**args)` | `tools[name](*args)` |
-| **Observe** | Append `ToolMessage` | Append `{"role": "tool"}` dict | Append to scratchpad string |
-| **Finish** | No tool calls in response | No tool calls in response | `"Final Answer:"` found in text |
+## 🛠️ Tech Stack
 
----
+<div align="center">
 
-## Implementations
+| Component | Technology | Description |
+|-----------|------------|-------------|
+| 🖥️ **Frontend** | Streamlit | Interactive web interface |
+| 🧠 **AI Framework** | LangChain 🦜🔗 | Orchestrates the AI pipeline |
+| 🔍 **Vector Database** | Pinecone 🌲 | Stores and retrieves document embeddings |
+| 🌐 **Web Crawling** | Tavily | Intelligent web scraping and content extraction |
+| 🧩 **Memory** | Conversational Memory | Coreference resolution and context continuity |
+| 🤖 **LLM** | OpenAI GPT | Powers the conversational AI |
+| 🐍 **Backend** | Python | Core application logic |
 
-### 1. LangChain Tool Calling
-**File:** [`1_agent_loop_langchain_tool_calling.py`](1_agent_loop_langchain_tool_calling.py)
+</div>
 
-We start here — this is how you'd normally build an agent. Reading through the code top to bottom:
+## 🚀 Quick Start
 
-- **Imports & config** — LangChain, LangSmith, model name
-- **Tools** — two plain Python functions decorated with `@tool`. LangChain auto-generates the JSON schema from the function signature and docstring. No manual schema writing needed.
-- **Agent loop** — initialize the LLM with `init_chat_model(f"ollama:{MODEL}")`, attach tools with `bind_tools()`, then loop: invoke the LLM, check if it returned tool calls, execute the tool, append a `ToolMessage`, repeat.
+### Prerequisites
 
-**What LangChain gives you:**
-- `@tool` → auto-generates JSON tool schema from your function
-- `init_chat_model()` → swap providers by changing one string (`"ollama:qwen3"` → `"openai:gpt-4o"`)
-- `bind_tools()` → attaches tool definitions to the LLM
-- `ToolMessage` → handles the tool result format
-- Typed message objects (`SystemMessage`, `HumanMessage`) instead of raw dicts
+- Python 3.8 or higher
+- OpenAI API key
+- Pinecone API key
+- [Tavily API key](https://app.tavily.com/home?utm_campaign=eden_marco&utm_medium=socials&utm_source=linkedin) (required - for documentation crawling and web search)
 
-It just works. But what's actually happening underneath all these abstractions?
+### Installation
 
-**Stack:** `langchain`, `langsmith` for tracing
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/emarco177/documentation-helper.git
+   cd documentation-helper
+   ```
 
----
+2. **Set up environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```env
+   PINECONE_API_KEY=your_pinecone_api_key_here
+   OPENAI_API_KEY=your_openai_api_key_here
+   TAVILY_API_KEY=your_tavily_api_key_here  # Required - for documentation crawling
+   ```
 
-### 2. Raw Function Calling (No LangChain)
-**File:** [`2_agent_loop_raw_function_calling.py`](2_agent_loop_raw_function_calling.py)
+3. **Install dependencies**
+   ```bash
+   pipenv install
+   ```
 
-Now we peel off LangChain and build the exact same agent using only the `ollama` Python SDK. Compare with file 1 side-by-side to see what LangChain was doing for you. Reading top to bottom:
+4. **Ingest LangChain Documentation** (Run the ingestion pipeline)
+   ```bash
+   python ingestion.py  # Uses Tavily to crawl and index documentation
+   ```
 
-- **Imports & config** — just `ollama` and `langsmith`. No LangChain.
-- **Tools** — the same two Python functions, but now they're just plain functions (no `@tool` decorator).
-- **Tool registry** — a simple dict mapping tool names to functions. In file 1, LangChain built this for you with `{t.name: t for t in tools}`.
-- **JSON tool schemas** — hand-written JSON dictionaries describing each tool's name, description, and parameters. This is what `@tool` auto-generated in file 1. You can see how verbose it is.
-- **Agent loop** — call `ollama.chat()` directly, pass the JSON schemas as `tools=`, check `response.message.tool_calls`, dispatch with `tools[name](**args)`, append raw `{"role": "tool"}` dicts to the message history.
+5. **Run the application**
+   ```bash
+   streamlit run main.py
+   ```
 
-**What you see without LangChain:**
-- Tool schemas are ~30 lines of JSON you have to write by hand
-- Messages are plain dicts (`{"role": "system", "content": "..."}`) instead of typed objects
-- Tool results are appended as `{"role": "tool", "content": result}` instead of `ToolMessage`
-- Switching to a different provider (OpenAI, Anthropic) means rewriting the SDK calls, message format, and tool schema format
+6. **Open your browser** and navigate to `http://localhost:8501`
 
-**Stack:** `ollama` SDK, `langsmith` for tracing
+## 🧪 Testing
 
----
-
-### 3. Raw ReAct Prompt (No Function Calling, No LangChain)
-**File:** [`3_raw_react_prompt.py`](3_raw_react_prompt.py)
-
-Now we peel off function calling itself. This is how agents worked **before LLMs had built-in tool calling** (pre-June 2023). No structured `tool_calls` in the API response — the LLM just outputs raw text, and we parse it with regex. Reading top to bottom:
-
-- **Imports & config** — `ollama`, `re` (regex), `langsmith`. No LangChain, no function calling.
-- **Tools** — same two Python functions, same tool registry dict.
-- **ReAct prompt template** — this is the key. Instead of passing JSON tool schemas to the API, we describe the tools *inside the prompt itself* as plain text. The prompt also instructs the LLM to follow a strict format: `Thought → Action → Action Input → Observation`. This is the original **ReAct pattern** from the [Yao et al. 2022 paper](https://arxiv.org/abs/2210.03629).
-- **Agent loop** — completely different from files 1 and 2:
-  - Send the full prompt (template + accumulated scratchpad) as a single user message
-  - Use `stop=["\nObservation"]` so the LLM stops before hallucinating the tool result — this lets us inject the real result
-  - Parse the LLM's raw text output with regex to extract `Action:` and `Action Input:`
-  - Execute the tool, then append the full cycle (`Thought/Action/Observation`) to the scratchpad string
-  - Check for `"Final Answer:"` in the text to know when the agent is done
-
-**What's different without function calling:**
-- No JSON schemas — tools are described as plain text in the prompt
-- No structured `tool_calls` — the LLM outputs text like `Action: get_product_price`
-- No message history — instead, a **scratchpad** string accumulates the full reasoning chain
-- Parsing is fragile — regex can break if the LLM doesn't follow the format exactly
-- The `stop` parameter is critical — without it, the LLM would hallucinate tool results
-
-**Stack:** `ollama` SDK, `re` (regex), `langsmith` for tracing
-
----
-
-## The Same Agent, Three Ways
-
-All three files answer the same question with the same tools:
-
-> **"What is the price of a laptop after applying a gold discount?"**
-
-**Tools:**
-- `get_product_price(product)` — looks up prices from a catalog (laptop: $1,299.99)
-- `apply_discount(price, discount_tier)` — applies a named discount tier (gold: 23% off)
-
-**Expected flow:**
-1. Agent calls `get_product_price("laptop")` → gets `1299.99`
-2. Agent calls `apply_discount(1299.99, "gold")` → gets `1000.99`
-3. Agent returns the final answer
-
-The discount tiers use non-obvious percentages (bronze: 5%, silver: 12%, gold: 23%) so the LLM can't guess the result — it *must* use the tools.
-
----
-
-## Quick Start
+Run the test suite to ensure everything is working correctly:
 
 ```bash
-git checkout project/agents-under-the-hood
-uv sync
+pipenv run pytest .
 ```
 
-Run each implementation:
-```bash
-uv run python 1_agent_loop_langchain_tool_calling.py
-uv run python 2_agent_loop_raw_function_calling.py
-uv run python 3_raw_react_prompt.py
+## 📁 Project Structure
+
+```
+documentation-helper/
+├── backend/                          # Core backend logic
+│   ├── __init__.py
+│   └── core.py
+├── static/                           # Static assets (images, logos)
+│   ├── banner.gif
+│   ├── LangChain Logo.png
+│   ├── Tavily Logo.png
+│   ├── Tavily Logo Trimmed Padded.png
+│   └── Trimmed Padded Langchain.png
+├── chroma_db/                        # Local vector database
+├── main.py                           # Streamlit application entry point
+├── ingestion.py                      # Document ingestion pipeline
+├── consts.py                         # Configuration constants
+├── logger.py                         # Logging utilities
+├── Tavily Demo Tutorial.ipynb        # 📚 Tutorial: Introduction to Tavily API
+├── Tavily Crawl Demo Tutorial.ipynb  # 📚 Tutorial: Advanced Tavily crawling techniques
+└── requirements files                # Pipfile, Pipfile.lock
 ```
 
-## Prerequisites
+### 📚 Tutorial Notebooks
 
-- **Ollama** running locally with the `qwen3:1.7b` model pulled (`ollama pull qwen3:1.7b`)
-- **LangSmith API key** in `.env` (optional, for tracing)
+The project includes comprehensive Jupyter notebooks that serve as hands-on tutorials:
+
+- **`Tavily Demo Tutorial.ipynb`**: Introduction to Tavily API basics and core functionality
+- **`Tavily Crawl Demo Tutorial.ipynb`**: Advanced tutorial covering Tavily's crawling capabilities, including TavilyMap and TavilyExtract features
+
+These tutorials provide step-by-step guidance on integrating Tavily's powerful web search and crawling capabilities into your AI applications.
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `PINECONE_API_KEY` | Your Pinecone API key for vector storage | ✅ |
+| `OPENAI_API_KEY` | Your OpenAI API key for LLM access | ✅ |
+| `TAVILY_API_KEY` | Your Tavily API key for documentation crawling and web search | ✅ |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+## 📚 Learning Resources
+
+This project is designed as a learning tool for understanding:
+- 🦜 LangChain framework implementation
+- 🔍 Vector search and embeddings
+- 💬 Conversational AI development
+- 🏗️ RAG (Retrieval-Augmented Generation) architecture
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🌟 Support
+
+If you find this project helpful, please consider:
+- ⭐ Starring the repository
+- 🐛 Reporting issues
+- 💡 Contributing improvements
+- 📢 Sharing with others
+
+---
+
+<div align="center">
+
+### 🔗 Connect with Me
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://www.udemy.com/course/langchain/?referralCode=D981B8213164A3EA91AC)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/eden-marco/)
+[![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/EdenEmarco177)
+
+**Built with ❤️ by Eden Marco**
+
+</div>
