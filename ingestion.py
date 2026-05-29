@@ -6,10 +6,10 @@ from typing import Any, Dict, List
 import certifi # Ensure certifi is imported to access the CA bundle
 # vertifi is needed to ensure that the SSL context uses the correct CA certificates, especially in environments where the default certificates may not be up-to-date or properly configured.
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
+# from langchain_chroma import Chroma
 from langchain_classic.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
-from langchain_openai import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings # embedding
 from langchain_pinecone import PineconeVectorStore
 from langchain_tavily import TavilyCrawl, TavilyExtract, TavilyMap
 
@@ -26,22 +26,23 @@ os.environ["SSL_CERT_FILE"] = certifi.where()
 os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
 # attention if using a VPN or proxy that intercepts SSL traffic, you may need to configure the SSL context to trust the proxy's certificate as well.
 
-
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-small",
-    show_progress_bar=False,
-    chunk_size=50, # limit of 50 documents per batch to avoid rate limits
+EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
+embeddings = OllamaEmbeddings(
+    model=EMBEDDING_MODEL,
+    #show_progress_bar=False,
+    #chunk_size=50, # limit of 50 documents per batch to avoid rate limits
     # id too high, you may encounter rate limits or timeouts when processing large batches of documents. Adjusting the chunk size to a smaller value can help mitigate these issues and ensure smoother processing.
-    retry_min_seconds=10,
+   # retry_min_seconds=10,
 )
-vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings)
-# vectorstore = PineconeVectorStore(
-#     index_name="langchain-docs-2025", embedding=embeddings
-# )
-tavily_extract = TavilyExtract()
-tavily_map = TavilyMap(max_depth=5, max_breadth=20, max_pages=1000)
-tavily_crawl = TavilyCrawl()
-
+#vectorstore = Chroma(persist_directory="chroma_db", embedding_function=embeddings) # it is a local vector store that can be used for development and testing. It allows you to store and query vector embeddings without needing an external service. This can be useful for small-scale projects or when you want to avoid the complexity of setting up a separate vector database. However, for larger projects or production use, you may want to consider using a more robust vector store like Pinecone, which is designed for scalability and performance.
+vectorstore = PineconeVectorStore( # it is a cloud-based vector database service that provides scalable and efficient storage and querying of vector embeddings. It is designed for production use and can handle large volumes of data with low latency. Using Pinecone can be beneficial for applications that require high performance and scalability, especially when dealing with large datasets or real-time querying. However, it may involve additional costs compared to a local vector store like Chroma.
+     index_name="langchain-docs-2025", embedding=embeddings
+)
+tavily_extract = TavilyExtract() # it is a tool that can be used to extract specific information from web pages during the crawling process. 
+tavily_map = TavilyMap(max_depth=5, max_breadth=20, max_pages=1000) # it is a tool that can be used to control the crawling process by defining parameters such as maximum depth, breadth, and number of pages to crawl. This allows you to manage the scope of the crawl and ensure that it stays within reasonable limits, preventing excessive crawling that could lead to performance issues or overwhelming amounts of data. By setting these parameters, you can focus the crawl on the most relevant sections of the documentation while avoiding unnecessary pages.
+tavily_crawl = TavilyCrawl() # it is a tool that can be used to perform the actual crawling of the documentation site. 
+# It allows you to specify the starting URL and other parameters to control the crawling process. The TavilyCrawl tool will navigate through the specified URL and its linked pages, extracting content based on the defined extraction rules and mapping parameters. This is a crucial component of the documentation ingestion pipeline, as it enables you to gather the raw content that will later be processed and indexed in the vector store.
+# Search = ricerca di URL a cui sono dei dati; Extract = estrazione dei dati da un URL; Map = controllo del processo di crawling (profondità, ampiezza, numero di pagine); Crawl = processo di crawling vero e proprio (navigazione e raccolta dei dati o tutto ciò che è associato a una pagina).
 
 async def index_documents_async(documents: List[Document], batch_size: int = 50):
     """Process documents in batches asynchronously."""
@@ -63,7 +64,7 @@ async def index_documents_async(documents: List[Document], batch_size: int = 50)
     # Process all batches concurrently
     async def add_batch(batch: List[Document], batch_num: int):
         try:
-            await vectorstore.aadd_documents(batch)
+            await vectorstore.add_documents(batch)
             log_success(
                 f"VectorStore Indexing: Successfully added batch {batch_num}/{len(batches)} ({len(batch)} documents)"
             )
@@ -104,6 +105,7 @@ async def main():
             "url": "https://python.langchain.com/",
             "max_depth": 2,
             "extract_depth": "advanced",
+            'instructions': "Extract the main content of the page, including text, code snippets, and relevant metadata. Ignore navigation menus, footers, and advertisements. Focus on extracting information that would be useful for understanding the documentation and its structure.",
         }
     )
 
