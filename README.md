@@ -1,150 +1,346 @@
-# LangChain- Develop AI Agents with LangChain & LangGraph 🦜🔗
+# MCP LLMS-TXT Documentation Server
 
-**Learn LangChain and LangGraph by building real world AI Agents (Python, Latest Version V.1.0+)**
+## Overview
 
-This course is designed to teach you how to QUICKLY harness the power of the LangChain library for LLM applications. Build 3 end-to-end working LangChain based generative AI applications with no fluff, no toy examples - just real projects using real APIs and real-world skills.
+[llms.txt](https://llmstxt.org/) is a website index for LLMs, providing background information, guidance, and links to detailed markdown files. IDEs like Cursor and Windsurf or apps like Claude Code/Desktop can use `llms.txt` to retrieve context for tasks. However, these apps use different built-in tools to read and process files like `llms.txt`. The retrieval process can be opaque, and there is not always a way to audit the tool calls or the context returned.
 
-![LangChain Logo](/static/LangChain_OSS%20Lockup_light.png)
-![LangGraph Logo](/static/LangGraph_OSS%20Lockup_light.png)
+[MCP](https://github.com/modelcontextprotocol) offers a way for developers to have *full control* over tools used by these applications. Here, we create [an open source MCP server](https://github.com/modelcontextprotocol) to provide MCP host applications (e.g., Cursor, Windsurf, Claude Code/Desktop) with (1) a user-defined list of `llms.txt` files and (2) a simple  `fetch_docs` tool read URLs within any of the provided `llms.txt` files. This allows the user to audit each tool call as well as the context returned. 
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/EdenMarco177?style=social)](https://twitter.com/EdenMarco177)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+<img src="https://github.com/user-attachments/assets/736f8f55-833d-4200-b833-5fca01a09e1b" width="60%">
 
-[![udemy](https://img.shields.io/badge/LangChain%20Udemy%20Course%20Coupon%20%2412.99-brightgreen)](https://www.udemy.com/course/langchain/?couponCode=APRIL-2026)
+## llms-txt
 
+You can find llms.txt files for langgraph and langchain here:
 
+| Library          | llms.txt                                                                                                   |
+|------------------|------------------------------------------------------------------------------------------------------------|
+| LangGraph Python | [https://langchain-ai.github.io/langgraph/llms.txt](https://langchain-ai.github.io/langgraph/llms.txt)     |
+| LangGraph JS     | [https://langchain-ai.github.io/langgraphjs/llms.txt](https://langchain-ai.github.io/langgraphjs/llms.txt) |
+| LangChain Python | [https://python.langchain.com/llms.txt](https://python.langchain.com/llms.txt)                             |
+| LangChain JS     | [https://js.langchain.com/llms.txt](https://js.langchain.com/llms.txt)                                     |
 
-## 💡 What You'll Build 
+## Quickstart
 
-This course takes you through building 7 real-world AI agent projects, from simple hello-world applications to advanced agentic systems:
+#### Install uv
+* Please see [official uv docs](https://docs.astral.sh/uv/getting-started/installation/#installation-methods) for other ways to install `uv`.
 
-| Project | Type | Description |
-|---------|------|-------------|
-| 👋 [LangChain Hello World](https://github.com/emarco177/langchain-course/tree/project/hello-world) | Branch (`project/hello-world`) | Your first AI agent - basic structure and LLM integration |
-| 🔎  [Modern Search Agent](https://github.com/emarco177/ice_breaker/tree/project/search-agent) | Branch (`project/search-agent`) | Build search agents using LangChain v.1's `create_agent` interface with custom tools, Tavily integration, and structured outputs |
-| 🧠 [Agents Under The Hood](https://github.com/emarco177/langchain-course/tree/project/agents-under-the-hood) | Branch (`project/agents-under-the-hood`) | Understanding reasoning and acting patterns in AI agents |
-| 📄 [RAG Gist](https://github.com/emarco177/langchain-course/tree/project/rag-gist) | Branch (`project/rag-gist`) | The gist of retrieval-augmented generation |
-| 📚 [Documentation Helper](https://github.com/emarco177/documentation-helper) | External Repo | Intelligent documentation assistant |
-| 💻 [Code Interpreter](https://github.com/emarco177/langchain-course/tree/project/code-interpreter) | Branch (`project/code-interpreter`) | AI-powered code execution and analysis |
-| 🪞 [Reflection Agent](https://github.com/emarco177/langgraph-course/tree/project/reflection-agent) | External Repo | Self-improving agent with reflection and critique capabilities |
-| 🔄 [Reflexion Agent](https://github.com/emarco177/langgraph-course/tree/project/reflexion-agent) | External Repo | Advanced self-correcting agent using reflexion techniques |
-| 🤖 [Agentic RAG](https://github.com/emarco177/langgraph-course/tree/project/agentic-rag) | External Repo | Advanced retrieval-augmented generation system |
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-## 📚 Course Highlights 
+#### Choose an `llms.txt` file to use. 
+* For example, [here's](https://langchain-ai.github.io/langgraph/llms.txt) the LangGraph `llms.txt` file.
 
-- **7 Complete Projects** - From beginner to advanced implementations including Ice Breaker, Documentation Helper, and Code Interpreter
-- **Real-World Applications** - Build agents that solve actual problems with live APIs
-- **Modern Tech Stack** - LangChain v0.3+, LangGraph, Pinecone, FAISS, Streamlit
-- **Practical Skills** - Learn RAG, vector databases, prompt engineering, and agent workflows
-- **Interactive Learning** - Follow commits chronologically for step-by-step learning
+> **Note: Security and Domain Access Control**
+> 
+> For security reasons, mcpdoc implements strict domain access controls:
+> 
+> 1. **Remote llms.txt files**: When you specify a remote llms.txt URL (e.g., `https://langchain-ai.github.io/langgraph/llms.txt`), mcpdoc automatically adds only that specific domain (`langchain-ai.github.io`) to the allowed domains list. This means the tool can only fetch documentation from URLs on that domain.
+> 
+> 2. **Local llms.txt files**: When using a local file, NO domains are automatically added to the allowed list. You MUST explicitly specify which domains to allow using the `--allowed-domains` parameter.
+> 
+> 3. **Adding additional domains**: To allow fetching from domains beyond those automatically included:
+>    - Use `--allowed-domains domain1.com domain2.com` to add specific domains
+>    - Use `--allowed-domains '*'` to allow all domains (use with caution)
+> 
+> This security measure prevents unauthorized access to domains not explicitly approved by the user, ensuring that documentation can only be retrieved from trusted sources.
 
-## 🤔 Learning Path 
+#### (Optional) Test the MCP server locally with your `llms.txt` file(s) of choice:
+```bash
+uvx --from mcpdoc mcpdoc \
+    --urls "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt" "LangChain:https://python.langchain.com/llms.txt" \
+    --transport sse \
+    --port 8082 \
+    --host localhost
+```
 
-### Phase 1: Foundations
-1. **Hello World Chain** - Basic agent structure and LLM integration
-2. **Code Interpreter** - Tool calling and code execution capabilities
+* This should run at: http://localhost:8082
 
-### Phase 2: Real-World Applications
-3. **Ice Breaker** - Data collection and social media integration
-4. **Documentation Helper** - RAG implementation and knowledge management
+![Screenshot 2025-03-18 at 3 29 30 PM](https://github.com/user-attachments/assets/24a3d483-cd7a-4c7e-a4f7-893df70e888f)
 
-### Phase 3: Advanced Concepts
-5. **Blog Analyzer** - Multi-step reasoning and content analysis
-6. **Agentic RAG** - Self-correcting agents with memory and planning
+* Run [MCP inspector](https://modelcontextprotocol.io/docs/tools/inspector) and connect to the running server:
+```bash
+npx @modelcontextprotocol/inspector
+```
 
-## ▶️ Getting Started 
+![Screenshot 2025-03-18 at 3 30 30 PM](https://github.com/user-attachments/assets/14645d57-1b52-4a5e-abfe-8e7756772704)
 
-### 🛠️ Prerequisites 
-- **This is not a beginner course** - Basic software engineering concepts needed
-- Familiarity with: git, Python, environment variables, classes, testing and debugging
-- Python 3.10+
-- Any Python package manager (uv, poetry, pipenv) - but NOT conda!
-- Access to an LLM (can be open source via Ollama, or cloud providers like OpenAI, Anthropic, Gemini)
-- No Machine Learning experience needed
+* Here, you can test the `tool` calls. 
 
-### ⚙️ Setup Instructions 
+#### Connect to Cursor 
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/emarco177/langchain-course
-   cd langchain-course
-   ```
-2. **Choose your learning path**
-   
-   **For branch-based projects:**
-   ```bash
-   # Start with Hello World
-   git checkout project/hello-world
-   uv sync
-   uv run python main.py
-   
-   # Progress to Code Interpreter
-   git checkout project/code-interpreter
-   uv sync
-   uv run python main.py
-   ```
-   
-   **For external repository projects:**
-   ```bash
-   # Clone specific project repositories
-   git clone https://github.com/emarco177/ice_breaker
-   cd ice_breaker
-   # Follow project-specific setup instructions
-   ```
+* Open `Cursor Settings` and `MCP` tab.
+* This will open the `~/.cursor/mcp.json` file.
 
-3. **Follow the commits**
-   - Each commit represents a lesson or feature implementation
-   - Use `git log --oneline` to see the learning progression
-   - Checkout previous commits to understand the development process
+![Screenshot 2025-03-19 at 11 01 31 AM](https://github.com/user-attachments/assets/3d1c8eb3-4d40-487f-8bad-3f9e660f770a)
 
-**External Projects:**
-- [Ice Breaker](https://github.com/emarco177/ice_breaker) - Social media profile analyzer
-- [Medium Analyzer](https://github.com/emarco177/blog-analyzer) - Content analysis and insights generator
-- [Documentation Helper](https://github.com/emarco177/documentation-helper) - AI documentation assistant
-- [Reflection Agent](https://github.com/emarco177/langgraph-course/tree/project/reflection-agent) - Self-improving agent with reflection and critique capabilities
-- [Reflexion Agent](https://github.com/emarco177/langgraph-course/tree/project/reflexion-agent) - Advanced self-correcting agent using reflexion techniques
-- [Agentic RAG](https://github.com/emarco177/langgraph-course/tree/project/agentic-rag) - Advanced retrieval-augmented generation system
+* Paste the following into the file (we use the `langgraph-docs-mcp` name and link to the LangGraph `llms.txt`).
 
+```
+{
+  "mcpServers": {
+    "langgraph-docs-mcp": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "mcpdoc",
+        "mcpdoc",
+        "--urls",
+        "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt LangChain:https://python.langchain.com/llms.txt",
+        "--transport",
+        "stdio"
+      ]
+    }
+  }
+}
+```
 
-## 📚 Learning Objectives 
+* Confirm that the server is running in your `Cursor Settings/MCP` tab.
+* Best practice is to then update Cursor Global (User) rules.
+* Open Cursor `Settings/Rules` and update `User Rules` with the following (or similar):
 
-By the end of this course, you'll be able to:
+```
+for ANY question about LangGraph, use the langgraph-docs-mcp server to help answer -- 
++ call list_doc_sources tool to get the available llms.txt file
++ call fetch_docs tool to read it
++ reflect on the urls in llms.txt 
++ reflect on the input question 
++ call fetch_docs on any urls relevant to the question
++ use this to answer the question
+```
 
-- Build AI agents from scratch using modern frameworks
-- Implement tool calling and external API integrations
-- Create RAG systems with vector databases
-- Design multi-step reasoning workflows
-- Deploy agents to production environments
-- Handle error correction and self-improvement in agents
-- Optimize agent performance and cost efficiency
+* `CMD+L` (on Mac) to open chat.
+* Ensure `agent` is selected. 
 
+![Screenshot 2025-03-18 at 1 56 54 PM](https://github.com/user-attachments/assets/0dd747d0-7ec0-43d2-b6ef-cdcf5a2a30bf)
 
+Then, try an example prompt, such as:
+```
+what are types of memory in LangGraph?
+```
 
+![Screenshot 2025-03-18 at 1 58 38 PM](https://github.com/user-attachments/assets/180966b5-ab03-4b78-8b5d-bab43f5954ed)
 
+### Connect to Windsurf
 
-## 🙏 Acknowledgements 
+* Open Cascade with `CMD+L` (on Mac).
+* Click `Configure MCP` to open the config file, `~/.codeium/windsurf/mcp_config.json`.
+* Update with `langgraph-docs-mcp` as noted above.
 
-Big thanks to the **LangChain / LangGraph** team and their excellent [documentation and tutorials](https://langchain-ai.github.io/langgraph/tutorials/introduction/) that make this course possible.
+![Screenshot 2025-03-19 at 11 02 52 AM](https://github.com/user-attachments/assets/d45b427c-1c1e-4602-820a-7161a310af24)
 
-## 🌟 Support
+* Update `Windsurf Rules/Global rules` with the following (or similar):
 
-If you find this project helpful, please consider:
-- ⭐ Starring the repository
-- 🐛 Reporting issues
-- 💡 Contributing improvements
-- 📢 Sharing with others
+```
+for ANY question about LangGraph, use the langgraph-docs-mcp server to help answer -- 
++ call list_doc_sources tool to get the available llms.txt file
++ call fetch_docs tool to read it
++ reflect on the urls in llms.txt 
++ reflect on the input question 
++ call fetch_docs on any urls relevant to the question
+```
 
----
+![Screenshot 2025-03-18 at 2 02 12 PM](https://github.com/user-attachments/assets/5a29bd6a-ad9a-4c4a-a4d5-262c914c5276)
 
-<div align="center">
+Then, try the example prompt:
+* It will perform your tool calls.
 
-### 🔗 Connect with Me
+![Screenshot 2025-03-18 at 2 03 07 PM](https://github.com/user-attachments/assets/0e24e1b2-dc94-4153-b4fa-495fd768125b)
 
-[![Portfolio](https://img.shields.io/badge/Portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://www.udemy.com/course/langchain/?referralCode=D981B8213164A3EA91AC)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/eden-marco/)
-[![Twitter](https://img.shields.io/badge/Twitter-1DA1F2?style=for-the-badge&logo=twitter&logoColor=white)](https://twitter.com/EdenEmarco177)
+### Connect to Claude Desktop
 
-**Built with ❤️ by Eden Marco**
+* Open `Settings/Developer` to update `~/Library/Application\ Support/Claude/claude_desktop_config.json`.
+* Update with `langgraph-docs-mcp` as noted above.
+* Restart Claude Desktop app.
 
-</div>
+> [!Note]
+> If you run into issues with Python version incompatibility when trying to add MCPDoc tools to Claude Desktop, you can explicitly specify the filepath to `python` executable in the `uvx` command.
+>
+> <details>
+> <summary>Example configuration</summary>
+>
+> ```
+> {
+>   "mcpServers": {
+>     "langgraph-docs-mcp": {
+>       "command": "uvx",
+>       "args": [
+>         "--python",
+>         "/path/to/python",
+>         "--from",
+>         "mcpdoc",
+>         "mcpdoc",
+>         "--urls",
+>         "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt",
+>         "--transport",
+>         "stdio"
+>       ]
+>     }
+>   }
+> }
+> ```
+> </details>
 
+> [!Note]
+> Currently (3/21/25) it appears that Claude Desktop does not support `rules` for global rules, so appending the following to your prompt.
+
+```
+<rules>
+for ANY question about LangGraph, use the langgraph-docs-mcp server to help answer -- 
++ call list_doc_sources tool to get the available llms.txt file
++ call fetch_docs tool to read it
++ reflect on the urls in llms.txt 
++ reflect on the input question 
++ call fetch_docs on any urls relevant to the question
+</rules>
+```
+
+![Screenshot 2025-03-18 at 2 05 54 PM](https://github.com/user-attachments/assets/228d96b6-8fb3-4385-8399-3e42fa08b128)
+
+* You will see your tools visible in the bottom right of your chat input.
+
+![Screenshot 2025-03-18 at 2 05 39 PM](https://github.com/user-attachments/assets/71f3c507-91b2-4fa7-9bd1-ac9cbed73cfb)
+
+Then, try the example prompt:
+
+* It will ask to approve tool calls as it processes your request.
+
+![Screenshot 2025-03-18 at 2 06 54 PM](https://github.com/user-attachments/assets/59b3a010-94fa-4a4d-b650-5cd449afeec0)
+
+### Connect to Claude Code
+
+* In a terminal after installing [Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview), run this command to add the MCP server to your project:
+```
+claude mcp add-json langgraph-docs '{"type":"stdio","command":"uvx" ,"args":["--from", "mcpdoc", "mcpdoc", "--urls", "langgraph:https://langchain-ai.github.io/langgraph/llms.txt", "LangChain:https://python.langchain.com/llms.txt"]}' -s local
+```
+* You will see `~/.claude.json` updated.
+* Test by launching Claude Code and running to view your tools:
+```
+$ Claude
+$ /mcp 
+```
+
+![Screenshot 2025-03-18 at 2 13 49 PM](https://github.com/user-attachments/assets/eb876a0e-27b4-480e-8c37-0f683f878616)
+
+> [!Note]
+> Currently (3/21/25) it appears that Claude Code does not support `rules` for global rules, so appending the following to your prompt.
+
+```
+<rules>
+for ANY question about LangGraph, use the langgraph-docs-mcp server to help answer -- 
++ call list_doc_sources tool to get the available llms.txt file
++ call fetch_docs tool to read it
++ reflect on the urls in llms.txt 
++ reflect on the input question 
++ call fetch_docs on any urls relevant to the question
+</rules>
+```
+
+Then, try the example prompt:
+
+* It will ask to approve tool calls.
+
+![Screenshot 2025-03-18 at 2 14 37 PM](https://github.com/user-attachments/assets/5b9a2938-ea69-4443-8d3b-09061faccad0)
+
+## Command-line Interface
+
+The `mcpdoc` command provides a simple CLI for launching the documentation server. 
+
+You can specify documentation sources in three ways, and these can be combined:
+
+1. Using a YAML config file:
+
+* This will load the LangGraph Python documentation from the `sample_config.yaml` file in this repo.
+
+```bash
+mcpdoc --yaml sample_config.yaml
+```
+
+2. Using a JSON config file:
+
+* This will load the LangGraph Python documentation from the `sample_config.json` file in this repo.
+
+```bash
+mcpdoc --json sample_config.json
+```
+
+3. Directly specifying llms.txt URLs with optional names:
+
+* URLs can be specified either as plain URLs or with optional names using the format `name:url`.
+* You can specify multiple URLs by using the `--urls` parameter multiple times.
+* This is how we loaded `llms.txt` for the MCP server above.
+
+```bash
+mcpdoc --urls LangGraph:https://langchain-ai.github.io/langgraph/llms.txt --urls LangChain:https://python.langchain.com/llms.txt
+```
+
+You can also combine these methods to merge documentation sources:
+
+```bash
+mcpdoc --yaml sample_config.yaml --json sample_config.json --urls LangGraph:https://langchain-ai.github.io/langgraph/llms.txt --urls LangChain:https://python.langchain.com/llms.txt
+```
+
+## Additional Options
+
+- `--follow-redirects`: Follow HTTP redirects (defaults to False)
+- `--timeout SECONDS`: HTTP request timeout in seconds (defaults to 10.0)
+
+Example with additional options:
+
+```bash
+mcpdoc --yaml sample_config.yaml --follow-redirects --timeout 15
+```
+
+This will load the LangGraph Python documentation with a 15-second timeout and follow any HTTP redirects if necessary.
+
+## Configuration Format
+
+Both YAML and JSON configuration files should contain a list of documentation sources. 
+
+Each source must include an `llms_txt` URL and can optionally include a `name`:
+
+### YAML Configuration Example (sample_config.yaml)
+
+```yaml
+# Sample configuration for mcp-mcpdoc server
+# Each entry must have a llms_txt URL and optionally a name
+- name: LangGraph Python
+  llms_txt: https://langchain-ai.github.io/langgraph/llms.txt
+```
+
+### JSON Configuration Example (sample_config.json)
+
+```json
+[
+  {
+    "name": "LangGraph Python",
+    "llms_txt": "https://langchain-ai.github.io/langgraph/llms.txt"
+  }
+]
+```
+
+## Programmatic Usage
+
+```python
+from mcpdoc.main import create_server
+
+# Create a server with documentation sources
+server = create_server(
+    [
+        {
+            "name": "LangGraph Python",
+            "llms_txt": "https://langchain-ai.github.io/langgraph/llms.txt",
+        },
+        # You can add multiple documentation sources
+        # {
+        #     "name": "Another Documentation",
+        #     "llms_txt": "https://example.com/llms.txt",
+        # },
+    ],
+    follow_redirects=True,
+    timeout=15.0,
+)
+
+# Run the server
+server.run(transport="stdio")
+```
