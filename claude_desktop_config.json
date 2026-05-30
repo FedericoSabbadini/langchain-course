@@ -1,0 +1,40 @@
+{
+  "globalShortcut": "",
+  "mcpServers": {
+    "langgraph-docs-mcp": {
+      "command": "uvx",
+      "args": [
+        "--system-certs",
+        "--from",
+        "c:\\Users\\Federico\\DesktopW\\mcpdoc",
+        "mcpdoc",
+        "--urls",
+        "LangGraph:https://langchain-ai.github.io/langgraph/llms.txt",
+        "--transport",
+        "stdio"
+      ]
+    }
+  },
+  "coworkUserFilesPath": "C:\\Users\\Federico\\Claude",
+  "preferences": {
+    "coworkScheduledTasksEnabled": false,
+    "ccdScheduledTasksEnabled": true,
+    "sidebarMode": "chat",
+    "bypassPermissionsGateByAccount": {
+      "eccc710a-a865-441d-8707-787db86776a6": false
+    },
+    "coworkWebSearchEnabled": true,
+    "remoteToolsDeviceName": "pc",
+    "epitaxyPrefs": {
+      "starred-local-code-sessions": [],
+      "starred-cowork-spaces": [],
+      "starred-session-groups": [],
+      "dframe-local-slice": {
+        "pinnedOrder": [],
+        "customGroupAssignments": {},
+        "customGroupOrder": {}
+      }
+    },
+    "chromeExtensionEnabled": false
+  }
+}
