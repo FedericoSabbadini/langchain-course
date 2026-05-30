@@ -6,7 +6,14 @@ mcp = FastMCP("Weather")
 
 @mcp.tool()
 async def get_weather(location: str) -> str:
-    """Get weather for location."""
+    """Get weather for location.
+    
+    Args:
+        location: The location for which to get weather
+        
+    Returns:
+        A description of the weather at the specified location
+    """
     return "Hot as hell"
 
 if __name__ == "__main__":
@@ -15,3 +22,5 @@ if __name__ == "__main__":
     # the client in real time. This is useful for our weather server because 
     # we can send updates to the client whenever the weather changes without
     #  the client having to request it.
+
+    # to run the server, we can use the command: python weather_server.py

@@ -2,15 +2,15 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
-from langchain_mcp_adapters.tools import load_mcp_tools
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_mcp_adapters.tools import load_mcp_tools # this is a helper function that loads the tools from the MCP server and returns them in a format that can be used by the agent.
 from langchain_anthropic import ChatAnthropic
 from langchain.agents import create_agent
-from langgraph.prebuilt import create_react_agent
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client 
 # stdio_client is a client that allows us to communicate with a server 
 # that uses the stdio transport protocol.
+
 
 load_dotenv()
 import sys
@@ -36,11 +36,22 @@ async def main():
             await session.initialize()
             print("session initialized")
             tools = await load_mcp_tools(session)
-
+            print("tools loaded: ", tools)
 
             agent = create_agent(model=f"ollama:{ollama_model}", tools=tools)
 
-            result = await agent.ainvoke({"messages": [HumanMessage(content="What is 54 + 2 * 3?")]})
+            result = await agent.ainvoke(
+                {
+                    "messages": [
+                        SystemMessage(
+                            content="You are a helpful assistant that is good at math thanks to the MCP server's capabilities and tool calls. You must trust the tools results, ALWAYS."
+                        ),
+                        HumanMessage(
+                            content="What is 54 + 2 * 3?"
+                        )
+                    ]
+                }
+            )
             print(result["messages"][-1].content)
 
 if __name__ == "__main__":
