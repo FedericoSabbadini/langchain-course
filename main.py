@@ -1,43 +1,72 @@
+from typing import Literal
+from langchain_core.messages import AIMessage, ToolMessage
+from langgraph.graph import END, START, StateGraph, MessagesState
 from langchain_core.messages import HumanMessage
-from langgraph.graph import END, StateGraph
-from state import MessageGraph
-from nodes.generationNode import generationNodeClass
-from nodes.reflectionNode import reflectionNodeClass
+from nodes.toolNode import toolNode
+from nodes.draftNode import draftNodeClass
+from nodes.reviseNode import reviseNodeClass
+
+MAX_ITERATIONS = 2
 
 
-def should_continue(state: MessageGraph):
-    """
-        Determines whether to continue the loop based on the number of messages.
-        If there are more than 6 messages, it ends the loop; otherwise, it continues to the reflection node.
-        Else it continues to the reflection node.
-    """
-    if len(state["messages"]) > 6:
+
+def should_continue(state: MessagesState) -> Literal["execute_tools", END]:
+    """Determine whether to continue or end based on iteration count."""
+    count_tool_visits = sum(
+        isinstance(item, ToolMessage) for item in state["messages"]
+    )
+    num_iterations = count_tool_visits
+    if num_iterations > MAX_ITERATIONS:
         return END
-    return reflectChain_node.name
+    return "execute_tools"
 
 
-# ------------------------------- Graph Construction -------------------------------
-builder = StateGraph(state_schema=MessageGraph)
-# -------------------------------- Nodes -------------------------------
-reflectChain_node = reflectionNodeClass()
-generateChain_node = generationNodeClass()
-builder.add_node(generateChain_node.name, generateChain_node.__call__)
-builder.add_node(reflectChain_node.name, reflectChain_node.__call__)
-builder.set_entry_point(reflectChain_node.name)
-# -------------------------------- Edges -------------------------------
-builder.add_conditional_edges(generateChain_node.name, should_continue)
-builder.add_edge(reflectChain_node.name, generateChain_node.name)
 
-# -------------------------------- Compile and Visualize -------------------------------
+
+# --------------------------------- Graph Construction ---------------------------------
+builder = StateGraph(MessagesState)
+# -------------------------------- Add nodes ----------------------------------
+draftNode = draftNodeClass()
+reviseNode = reviseNodeClass()
+builder.add_node(draftNode.name, draftNode.__call__)
+builder.add_node("execute_tools", toolNode)
+builder.add_node(reviseNode.name, reviseNode.__call__)
+builder.add_edge(START, draftNode.name)
+builder.add_edge(draftNode.name, "execute_tools")
+builder.add_edge("execute_tools", reviseNode.name)
+builder.add_conditional_edges(reviseNode.name, should_continue, 
+                              [
+                                  "execute_tools", 
+                                  END
+                            ])
 graph = builder.compile()
+
 print(graph.get_graph().draw_mermaid())
-graph.get_graph().print_ascii()
+
+
+
+res = graph.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "Write about AI-Powered SOC / autonomous soc problem domain, list startups that do that and raised capital.",
+            }
+        ]
+    }
+)
+# Extract the final answer from the last message with tool calls
+last_message = res["messages"][-1]
+if isinstance(last_message, AIMessage) and last_message.tool_calls:
+    print(last_message.tool_calls[0]["args"]["answer"])
+print(res)
+
 
 
 if __name__ == "__main__":
     print("Hello LangGraph")
 
-    question = "Make this tweet better: @LangChainAI — newly Tool Calling feature is seriously underrated. After a long wait, it's here- making the implementation of agents across different models with function calling - super easy. Made a video covering their newest blog post"
+    question = "Write about AI-Powered SOC / autonomous soc  problem domain,  list startups that do that and raised capital."
     inputs = {
         "messages": [
             HumanMessage(content=question)
