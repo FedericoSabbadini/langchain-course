@@ -31,6 +31,7 @@ reviseNode = reviseNodeClass()
 builder.add_node(draftNode.name, draftNode.__call__)
 builder.add_node("execute_tools", toolNode)
 builder.add_node(reviseNode.name, reviseNode.__call__)
+# -------------------------------- Add edges ----------------------------------
 builder.add_edge(START, draftNode.name)
 builder.add_edge(draftNode.name, "execute_tools")
 builder.add_edge("execute_tools", reviseNode.name)
@@ -39,8 +40,8 @@ builder.add_conditional_edges(reviseNode.name, should_continue,
                                   "execute_tools", 
                                   END
                             ])
+# -------------------------------- Compile graph ----------------------------------
 graph = builder.compile()
-
 print(graph.get_graph().draw_mermaid())
 
 
