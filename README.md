@@ -1,74 +1,107 @@
-# MCP Crash Course 🚀
-![MCP Tool Call Demo](/static/mcp-tool-call.gif)
+# 🦜🪞 LangGraph Reflection Agent
 
+This repository contains a reflection-style agent architecture built with LangGraph that improves output quality through self-critique and refinement.
 
-[![Twitter Follow](https://img.shields.io/twitter/follow/EdenMarco177?style=social)](https://twitter.com/EdenMarco177)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+## ✨ Overview
 
-[![udemy](https://img.shields.io/badge/MCP%20Udemy%20Course%20Coupon%20%2412.99-brightgreen)](https://www.udemy.com/course/model-context-protocol/?couponCode=APRIL-2026)
+The reflection agent uses a feedback loop between a generation component and a reflection component to iteratively improve responses to user queries. In this implementation, we've created a Twitter assistant that enhances tweets through multiple rounds of critique and revision.
 
-Welcome to the MCP Crash Course! This repository is designed to teach you the fundamentals and advanced concepts of the Model Context Protocol (MCP) in a hands-on way.
+```mermaid
+graph LR;
+    __start__([__start__]):::first
+    generate(generate)
+    reflect(reflect)
+    __end__([__end__]):::last
+    __start__ --> generate;
+    generate --> reflect;
+    reflect -.-> generate;
+    generate -.-> __end__;
+    classDef default fill:#f2f0ff,line-height:1.2
+    classDef first fill-opacity:0
+    classDef last fill:#bfb6fc
+```
+[![udemy](https://img.shields.io/badge/LangGraph🦜🔗%20Udemy%20Course-%20Coupon%20%2412.99-brightgreen)](https://www.udemy.com/course/langgraph/?couponCode=APRIL-2025)
 
-## What is MCP? 💡
+## 🔄 How It Works
 
-The Model Context Protocol (MCP) helps connect AI-agentic applications powered by Large Language Models (LLMs) to external tools and data sources, enabling more capable and context-aware AI systems.
+1. **Generate**: The initial component creates a response (in our case, a tweet) based on the user's input
+2. **Reflect**: The reflection component evaluates the generated content and provides specific feedback for improvement
+3. **Loop**: The generation component refines its output based on the reflection's feedback
+4. **Termination**: The process ends after a predetermined number of iterations (currently set to 6)
 
-## How it Works 🤔
+This approach creates a self-improving system that produces higher quality outputs through deliberate reflection.
 
-This repository uses a unique branch-based structure for learning:
+## 💻 Installation
 
-1.  **Each `project/*` branch covers a specific MCP feature or concept.**
-2.  **Within each branch, commits are ordered chronologically.** Follow the commits one by one to learn the topic step-by-step.
+```bash
+# Clone the repository
+git clone https://github.com/emarco177/langgraph-course.git
+cd langgraph-course
+git checkout project/reflection-agent
 
-Simply check out the branch for the topic you want to learn and walk through the commits!
+# Install dependencies using Poetry
+poetry install
+```
 
-## Available Topics (Branches) 📚
+## 📁 Project Structure
 
-Here are the topics currently available:
+```
+reflection-agent/
+├── chains.py         # Defines the prompt chains for generation and reflection
+├── main.py           # Implements the core LangGraph structure
+├── pyproject.toml    # Project dependencies and configuration
+└── README.md         # This documentation
+```
 
-*   `project/sse`: Learn how to implement Server-Sent Events (SSE) with MCP.
-*   `project/langchain-mcp-adapters`: Explore integrating MCP with LangChain adapters.
-*   `project/docker-mcp`: Understand how to containerize your MCP applications using Docker.
-*   `project/prompts`: Learn how to implement and work with MCP Prompts, featuring FastMCP 2.0.
+## 🛠️ Implementation Details
 
-*More topics might be added, so keep an eye out!*
+### Main Components
 
-## Prerequisites 🛠️
+The reflection agent is built with two primary nodes:
 
-Before you start, make sure you have the following installed:
+1. **Generation Node** (in `chains.py`):
+   - Uses a specialized prompt for creating Twitter content
+   - Responds to critique by refining previously generated content
 
-*   🐍 Python (version 3.10 or higher)
-*   📦 `uv` (the fast Python package installer and resolver)
-*   ✨ Cursor IDE
-*   ☁️ Claude Desktop
+2. **Reflection Node** (in `chains.py`):
+   - Critiques the generated content against quality criteria
+   - Provides specific recommendations for improvement
 
-## Getting Started ▶️
+## 🔍 Example Usage
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/emarco177/mcp-crash-course.git
-    cd mcp-crash-course
-    ```
-2.  **Choose a topic and check out the branch:**
-    ```bash
-    # Example for the SSE topic
-    git checkout project/sse
-    ```
-3.  **Follow the commits:** Use `git log --oneline --reverse` to see the chronological list of commits for the branch. Then, use `git checkout <commit_hash>` or your Git client to step through the history and learn.
+```python
+from langchain_core.messages import HumanMessage
+from main import graph
 
-## Contributing 🤝
+# Create input prompt
+input_tweet = HumanMessage(content="""Make this tweet better:
+@LangChainAI — newly Tool Calling feature is seriously underrated.
+After a long wait, it's here- making the implementation of agents across different models with function calling - super easy.
+Made a video covering their newest blog post""")
 
-Contributions are welcome! If you'd like to add a new topic or improve an existing one:
+# Run the reflection agent
+improved_tweet = graph.invoke(input_tweet)
+print(improved_tweet)
+```
 
-1.  Fork the repository.
-2.  Create a new branch for your feature following the naming convention: `project/your-mcp-feature-name`.
-3.  Make your changes, ensuring each commit represents a logical step in the learning process.
-4.  Open a Pull Request against the `main` branch.
+## 📚 Video Lessons
 
-## License 📄
+This project is built incrementally across multiple video lessons. Each commit represents a specific lesson in the series:
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+| Lesson | Commit | Description |
+|--------|--------|-------------|
+| 1 | [adbee18](https://github.com/emarco177/langgaph-course/commit/adbee18) | **Getting Started**: Initial setup for the reflection agent |
+| 2 | [aab1105](https://github.com/emarco177/langgaph-course/commit/aab1105) | **Project Structure**: Adding core files and dependencies with Poetry |
+| 3 | [d2f15d2](https://github.com/emarco177/langgaph-course/commit/d2f15d2) | **Chain Implementation**: Building Twitter influencer prompts and generation logic |
+| 4 | [ed491a6](https://github.com/emarco177/langgaph-course/commit/ed491a6) | **Graph Implementation**: Connecting nodes with conditional logic for feedback loops |
 
-Happy learning! 🎉
+Each lesson builds on the previous one, demonstrating how to incrementally build a reflection agent architecture using LangGraph.
 
+## 👏 Acknowledgment
 
+This reflection agent implementation is based on the concepts and patterns described in the LangGraph documentation. For more information about reflection agents, visit the [LangGraph Reflection Tutorial](https://langchain-ai.github.io/langgraph/tutorials/reflection/reflection/).
+
+## 🔗 Links
+[![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://www.udemy.com/course/langgraph/?referralCode=FEA50E8CBA24ECD48212)
+[![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/eden-marco/)
+[![Twitter Follow](https://img.shields.io/twitter/follow/EdenEmarco177?style=social)](https://twitter.com/EdenEmarco177)
