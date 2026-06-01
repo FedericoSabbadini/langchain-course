@@ -1,8 +1,9 @@
 from typing import Any, Dict
 from graph.states import GraphState
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field
+import os
 
 
 class GradeDocuments(BaseModel):
@@ -15,7 +16,7 @@ class GradeDocuments(BaseModel):
 
 class graderNodeClass:
     def __init__(self):
-        llm = ChatOpenAI(temperature=0)
+        llm = ChatOllama(model = os.getenv("OLLAMA_MODEL"), temperature=0)
         structured_llm_grader = llm.with_structured_output(GradeDocuments)
         
         system_grader = """You are a grader assessing relevance of a retrieved document to a user question. \n 

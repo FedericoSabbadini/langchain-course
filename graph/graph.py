@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 from langgraph.graph import END, StateGraph
-from graph.consts import GENERATE, GRADE_DOCUMENTS, RETRIEVE, WEBSEARCH
 from graph.nodes import generatorNodeClass, graderNodeClass, retrieverNodeClass, searcherNodeClass, routerNodeClass
 from graph.states import GraphState
 load_dotenv()
@@ -88,9 +87,9 @@ workflow.add_conditional_edges(
     GENERATOR,
     grade_generation,
     {
-        "not supported": GENERATOR,
-        "useful": END,
-        "not useful": SEARCHER,
+        GENERATOR: GENERATOR,
+        SEARCHER: SEARCHER,
+        END: END,
     }
 )
 workflow.add_edge(SEARCHER, GENERATOR)

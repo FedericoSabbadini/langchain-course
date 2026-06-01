@@ -1,16 +1,15 @@
 from typing import Any, Dict
 from langchain_chroma import Chroma
-from langchain_anthropic import OpenAIEmbeddings
+from langchain_ollama import OllamaEmbeddings # embedding
 from graph.states import GraphState
-from ingestion import retriever
-
+import os
 
 class retrieverNodeClass:
     def __init__(self) -> None:
         self.retriever = Chroma(
             collection_name="rag-chroma",
             persist_directory="./.chroma",
-            embedding_function=OpenAIEmbeddings(),
+            embedding_function=OllamaEmbeddings(model=os.getenv("OLLAMA_EMBEDDING_MODEL")),
         ).as_retriever()
         self.name = "retrieve"
 

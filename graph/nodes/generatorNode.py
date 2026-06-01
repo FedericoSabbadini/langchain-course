@@ -1,12 +1,11 @@
 from typing import Any, Dict
 from graph.states import GraphState
-from langchain import hub
 from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnableSequence
-
+import os
+from langsmith import Client
 
 class GradeHallucinations(BaseModel):
     """Binary score for hallucination present in generation answer."""
@@ -20,8 +19,10 @@ class GradeAnswer(BaseModel):
 
 class generatorNodeClass:
     def __init__(self) -> None:
-        llm = ChatOpenAI(temperature=0)
-        prompt = hub.pull("rlm/rag-prompt") # this is a prompt that we created and uploaded to the langsmith hub, you can find it in the folder graph/prompts/ragPrompt.py
+        llm = ChatOllama(model = os.getenv("OLLAMA_MODEL"), temperature=0)
+        client = Client()
+        prompt = client.pull_prompt("rlm/rag-prompt",     dangerously_pull_public_prompt=True
+) # this is a prompt that we created and uploaded to the langsmith hub, you can find it in the folder graph/prompts/ragPrompt.py
 
         system = """You are a grader assessing whether an LLM generation is grounded in / supported by a set of retrieved facts. \n 
             Give a binary score 'yes' or 'no'. 'Yes' means that the answer is grounded in / supported by the set of facts."""
