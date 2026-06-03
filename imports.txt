@@ -1,0 +1,38 @@
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate, MessagesPlaceholder
+from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
+from langchain_core.output_parsers import StrOutputParser   
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.documents import Document
+
+from langchain.agents import create_agent
+
+from langchain.tools import tool
+
+
+from langchain_tavily import TavilySearch, TavilyCrawl, TavilyExtract, TavilyMap
+	Search -> trova pagine
+	Extract -> legge pagine specifiche
+	Crawl -> esplora un sito intero
+	Map -> scopre la struttura/link di un sito
+
+from langchain_anthropic import ChatAnthropic
+from langchain_ollama import ChatOllama
+
+from langsmith import traceable
+from pinecone import Pinecone
+
+from langchain_community.document_loaders import TextLoader # document loader
+from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter # text splitter
+from langchain_chroma import Chroma # alternative to pinecone to local vs
+from langchain_pinecone import PineconeVectorStore # vector store
+from langchain_ollama import OllamaEmbeddings # embedding
+
+import certifi
+import asyncio
+
+from mcp.server.fastmcp import FastMCP # MCPServer
+from mcp.client.stdio import stdio_client # MCPClient for stdioMCPServers
+from mcp import ClientSession, StdioServerParameters # StdioServerParameters=who is the server, ClientSession=client session
+from langchain_mcp_adapters.tools import load_mcp_tools # tools loader from a clientSession
+
+from langgraph.graph import END, START, StateGraph, MessagesState
