@@ -30,8 +30,7 @@ builder.add_edge(reflectChain_node.name, generateChain_node.name)
 
 # -------------------------------- Compile and Visualize -------------------------------
 graph = builder.compile()
-print(graph.get_graph().draw_mermaid())
-graph.get_graph().print_ascii()
+graph.get_graph().draw_mermaid_png(output_file_path="graph.png")
 
 
 if __name__ == "__main__":
