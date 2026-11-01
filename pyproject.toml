@@ -6,6 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiohttp>=3.14.4",
-    "langgraph>=1.2.2",
+    "langgraph>=1.2.19",
     "mcp[cli]>=1.6.0",
 ]
+
+# Floors for packages that arrive only as dependencies (GHSA-8xx6-hgc6-gc2m, GHSA-7mj9-2mp8-4m2p, GHSA-h4x7-gw46-3wm6, GHSA-pf96-p4fj-6566).
+[tool.uv]
+constraint-dependencies = ["httpx2>=2.12.0", "httpcore2>=2.10.0"]
